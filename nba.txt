@@ -1,0 +1,49 @@
+import os
+import requests
+from datetime import datetime
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+def send_alert(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": text,
+        "parse_mode": "Markdown"
+    }
+    requests.post(url, json=payload)
+
+def implied_prob(odds):
+    if odds < 0:
+        return abs(odds) / (abs(odds) + 100)
+    return 100 / (odds + 100)
+
+def calc_ev(true_prob, odds):
+    payout = odds / 100 if odds > 0 else 100 / abs(odds)
+    return (true_prob * payout) - (1 - true_prob)
+
+def run():
+    # 🔁 SAMPLE DATA (replace later with live odds)
+    player = "Peyton Watson"
+    market = "Over 6.5 Rebounds"
+    book_odds = +125
+    pinnacle_odds = -152
+
+    true_prob = implied_prob(pinnacle_odds)
+    ev = calc_ev(true_prob, book_odds)
+
+    if ev >= 0.03:
+        message = (
+            f"🏀 *NBA +EV ALERT*\n\n"
+            f"*Player:* {player}\n"
+            f"*Market:* {market}\n"
+            f"*Odds:* {book_odds}\n"
+            f"*True Line:* {pinnacle_odds}\n"
+            f"*EV:* {ev*100:.2f}%\n\n"
+            f"⏰ {datetime.utcnow().strftime('%H:%M UTC')}"
+        )
+        send_alert(message)
+
+if __name__ == "__main__":
+    run()
